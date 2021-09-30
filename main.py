@@ -38,7 +38,7 @@ markup.add(itembtn1, itembtn2, itembtn5)
 markup1.add(itembtn3, itembtn6, itembtn4, itembtn5)
 
 password = "beingOPuser@5"
-mydb = mysql.connector.connect(host="localhost", user="root", passwd=password, database="sql_expensebot")
+mydb = mysql.connector.connect(user='root', password='ilml@$600', host='34.133.159.110', database='sql_expensebot')
 mycursor = mydb.cursor()
 
 #start command handler
