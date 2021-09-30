@@ -3,10 +3,12 @@ import mysql.connector
 from settings import API_KEY, PASSWORD, HOST
 import time as t
 from telebot import *
+from telegramcalendar import create_calendar
 
 bot = telebot.TeleBot(API_KEY)
 apihelper.SESSION_TIME_TO_LIVE = 60 * 5
 
+current_shown_dates = {}
 expense_dict = {}
 
 class expense:
@@ -112,7 +114,7 @@ def customerRegistration(message):
     username = str(message.chat.username)
     chat_id = message.chat.id
     sqlform = "Insert into customer_details(customer_chatid, customer_username, date_created) values (%s, %s, %s)"
-    details = [(chat_id, username, date.today())]
+    details = [(chat_id, username, datetime.date.today())]
     mycursor.executemany(sqlform, details)
 
 #expense data description recorder function
@@ -139,19 +141,16 @@ def expenseDetailsRecorderDate(message):
     amount = message.text
     expense = expense_dict[chat_id]
     expense.amount = amount
-    bot.send_chat_action(message.chat.id, action='typing')
-    t.sleep(0.3)
-    bot.send_message(message.chat.id, 'Enter the date of expense (In the format: YEAR-MONTH-DATE, for ex: 2021-06-09)')
-    bot.register_next_step_handler(message, expenseDetailsRecorder)
+    datecalendar(message)
 
 #expense data insert function into mysql database
-def expenseDetailsRecorder(message):
+def expenseDetailsRecorder(message, date):
     chat_id = message.chat.id
-    dateOfExpense = message.text
+    dateOfExpense = date
     expense = expense_dict[chat_id]
     expense.dateOfExpense = dateOfExpense
     sqlform = "Insert into expense_details(customer_id, expense_details, expense_amt, date_of_expense, date_of_entry) values (%s, %s, %s, %s, %s)"
-    details = [(expense.customerid, expense.description, expense.amount, dateOfExpense, date.today())]
+    details = [(expense.customerid, expense.description, expense.amount, expense.dateOfExpense, datetime.date.today())]
     try:
         mycursor.executemany(sqlform, details)
         mydb.commit()
@@ -242,7 +241,7 @@ def check2(message):
                 sum = sum + amount
         bot.send_chat_action(message.chat.id, action='typing')
         t.sleep(0.3)
-        bot.send_message(message.chat.id, 'Sum of your recorded expenses = ₹'+ str(sum))
+        bot.send_message(message.chat.id, 'Sum of your recorded expenses: ₹'+ str(sum))
         bot.send_message(message.chat.id, 'Select an option below to continue: ', reply_markup = markup1)
         bot.register_next_step_handler(message, check2)
     elif message.text == optionD:
@@ -253,5 +252,62 @@ def check2(message):
         bot.send_chat_action(message.chat.id, action='typing')
         t.sleep(0.3)
         bot.send_message(message.chat.id, 'Thank you for using the Expense tracker Bot. You can always come back and tap /continue or /start to record or track your expenses. Have a nice day! Good bye')
+
+def datecalendar(message):
+    now = datetime.datetime.now()
+    chat_id = message.chat.id
+
+    date = (now.year, now.month)
+    current_shown_dates[chat_id] = date
+
+    markupcalendar = create_calendar(now.year, now.month)
+
+    bot.send_message(message.chat.id, "Please, choose a date", reply_markup=markupcalendar)
+
+@bot.callback_query_handler(func=lambda call: 'DAY' in call.data[0:13])
+def handle_day_query(call):
+    chat_id = call.message.chat.id
+    saved_date = current_shown_dates.get(chat_id)
+    last_sep = call.data.rfind(';') + 1
+
+    if saved_date is not None:
+
+        day = call.data[last_sep:]
+        date = datetime.date(int(saved_date[0]), int(saved_date[1]), int(day))
+        expenseDetailsRecorder(call.message, date)
+    else:
+        bot.send_message(chat_id, "Please select correct date from the calendar to continue: ")
+        pass
+
+@bot.callback_query_handler(func=lambda call: 'MONTH' in call.data)
+def handle_month_query(call):
+
+    info = call.data.split(';')
+    month_opt = info[0].split('-')[0]
+    year, month = int(info[1]), int(info[2])
+    chat_id = call.message.chat.id
+
+    if month_opt == 'PREV':
+        month -= 1
+
+    elif month_opt == 'NEXT':
+        month += 1
+
+    if month < 1:
+        month = 12
+        year -= 1
+
+    if month > 12:
+        month = 1
+        year += 1
+
+    date = (year, month)
+    current_shown_dates[chat_id] = date
+    markupcalendar = create_calendar(year, month)
+    bot.edit_message_text("Please, choose a date", call.from_user.id, call.message.message_id, reply_markup=markupcalendar)
+
+@bot.callback_query_handler(func=lambda call: "IGNORE" in call.data)
+def ignore(call):
+    bot.answer_callback_query(call.id, text="OOPS... something went wrong")
 
 bot.polling()
