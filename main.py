@@ -1,4 +1,4 @@
-from datetime import *
+import datetime
 import mysql.connector
 from settings import API_KEY, PASSWORD, HOST
 import time as t
