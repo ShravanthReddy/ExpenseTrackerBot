@@ -1,11 +1,10 @@
 import mysql.connector
 import datetime
 import time as t
-from telebot import types, apihelper
-import telebot
+from settings import API_KEY, HOST, PASSWORD
+from telebot import *
 from telegramcalendar import create_calendar
 
-API_KEY = '1951959202:AAHTBw3KXF9weHEEz9opf0A3AL0v3aryx78'
 bot = telebot.TeleBot(API_KEY)
 apihelper.SESSION_TIME_TO_LIVE = 60 * 5
 
@@ -37,8 +36,7 @@ itembtn6 = types.KeyboardButton(optionF)
 markup.add(itembtn1, itembtn2, itembtn5)
 markup1.add(itembtn3, itembtn6, itembtn4, itembtn5)
 
-password = "beingOPuser@5"
-mydb = mysql.connector.connect(user='root', password='ilml@$600', host='34.133.159.110', database='sql_expensebot')
+mydb = mysql.connector.connect(user='root', password=PASSWORD, host=HOST, database='sql_expensebot')
 mycursor = mydb.cursor()
 
 #start command handler
