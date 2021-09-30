@@ -166,12 +166,12 @@ def expenseDetailsRecorder(message):
 #track expense function
 def trackExpense(message):
     chat_id = message.chat.id
-    mycursor.execute("select customer_id from expense_details")
+    mycursor.execute("select customer_chatid, customer_id from customer_details")
     count = 0
     for i in mycursor.fetchall():
         result = i[0]
-        customerid = customeridExtraction(message)
-        if result == customerid:
+        customerid = i[1]
+        if result == chat_id:
             count = count + 1
             customerExpenses(message, customerid)
     if count == 0:
@@ -210,14 +210,23 @@ def deleteRecords(message):
 
 #Recorded expense display function
 def customerExpenses(message, customerid):
+    count = 0
     mycursor.execute("select customer_id, expense_details, expense_amt, date_of_expense, expense_id from expense_details")
     for i in mycursor.fetchall():
         if i[0] == customerid:
+            count = count + 1
             description = i[1]
             amount = i[2]
             dateOfExpense = i[3]
             expenseid = i[4]
             bot.send_message(message.chat.id, 'Expense ID: '+ str(expenseid) +'\nExpense description: '+ description +'\nAmount Spent: ₹'+ str(amount) +'\nDate Spent: '+ str(dateOfExpense))
+        
+    if count == 0:
+        bot.send_chat_action(message.chat.id, action='typing')
+        t.sleep(0.5)
+        bot.send_message(message.chat.id, 'You do not have any expenses recorded. Please start recording an expense first:')
+        cont(message)
+
     bot.send_message(message.chat.id, 'Select an option below to continue: ', reply_markup = markup1)
     bot.register_next_step_handler(message, check2)
 
@@ -226,7 +235,7 @@ def check2(message):
     if message.text == optionC:
         sum = 0
         customerid = customeridExtraction(message)
-        mycursor.execute("select customer_id, expense_details, expense_amt, date_of_expense from expense_details")
+        mycursor.execute("select customer_id, expense_details, expense_amt from expense_details")
         for i in mycursor.fetchall():
             if i[0] == customerid:
                 amount = i[2]
@@ -234,7 +243,8 @@ def check2(message):
         bot.send_chat_action(message.chat.id, action='typing')
         t.sleep(0.3)
         bot.send_message(message.chat.id, 'Sum of your recorded expenses = ₹'+ str(sum))
-        cont(message)
+        bot.send_message(message.chat.id, 'Select an option below to continue: ', reply_markup = markup1)
+        bot.register_next_step_handler(message, check2)
     elif message.text == optionD:
         cont(message)
     elif message.text == optionF:
