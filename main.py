@@ -1,10 +1,11 @@
-import datetime
 import mysql.connector
-from settings import API_KEY, PASSWORD, HOST
+import datetime
 import time as t
-from telebot import *
+from telebot import types, apihelper
+import telebot
 from telegramcalendar import create_calendar
 
+API_KEY = '1951959202:AAHTBw3KXF9weHEEz9opf0A3AL0v3aryx78'
 bot = telebot.TeleBot(API_KEY)
 apihelper.SESSION_TIME_TO_LIVE = 60 * 5
 
@@ -36,7 +37,8 @@ itembtn6 = types.KeyboardButton(optionF)
 markup.add(itembtn1, itembtn2, itembtn5)
 markup1.add(itembtn3, itembtn6, itembtn4, itembtn5)
 
-mydb = mysql.connector.connect(user='root', password=PASSWORD, host=HOST, database='sql_expensebot')
+password = "beingOPuser@5"
+mydb = mysql.connector.connect(host="localhost", user="root", passwd=password, database="sql_expensebot")
 mycursor = mydb.cursor()
 
 #start command handler
@@ -260,9 +262,9 @@ def datecalendar(message):
     date = (now.year, now.month)
     current_shown_dates[chat_id] = date
 
-    markupcalendar = create_calendar(now.year, now.month)
+    markup = create_calendar(now.year, now.month)
 
-    bot.send_message(message.chat.id, "Please, choose a date", reply_markup=markupcalendar)
+    bot.send_message(message.chat.id, "Please, choose a date", reply_markup=markup)
 
 @bot.callback_query_handler(func=lambda call: 'DAY' in call.data[0:13])
 def handle_day_query(call):
@@ -303,8 +305,8 @@ def handle_month_query(call):
 
     date = (year, month)
     current_shown_dates[chat_id] = date
-    markupcalendar = create_calendar(year, month)
-    bot.edit_message_text("Please, choose a date", call.from_user.id, call.message.message_id, reply_markup=markupcalendar)
+    markup = create_calendar(year, month)
+    bot.edit_message_text("Please, choose a date", call.from_user.id, call.message.message_id, reply_markup=markup)
 
 @bot.callback_query_handler(func=lambda call: "IGNORE" in call.data)
 def ignore(call):
