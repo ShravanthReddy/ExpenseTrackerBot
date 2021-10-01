@@ -44,9 +44,9 @@ def create_calendar(year=None, month=None):
                 row.append({"text": "{}".format(day), "callback_data": create_callback_data("DAY", year, month, day)})
         markup["inline_keyboard"].append(row)
     # Last row - Buttons
-    row = [{"text": "<", "callback_data": create_callback_data("PREV-MONTH", year, month, day)},
+    row = [{"text": "< Prev", "callback_data": create_callback_data("PREV-MONTH", year, month, day)},
            {"text": " ", "callback_data": data_ignore},
-           {"text": ">", "callback_data": create_callback_data("NEXT-MONTH", year, month, day)}]
+           {"text": "Next >", "callback_data": create_callback_data("NEXT-MONTH", year, month, day)}]
     markup["inline_keyboard"].append(row)
 
     return json.dumps(markup)
