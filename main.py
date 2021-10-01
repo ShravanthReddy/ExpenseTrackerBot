@@ -3,7 +3,7 @@ import logging as NULL
 import datetime
 import time as t
 from telebot import types, apihelper
-from settings import API_KEY
+from settings import API_KEY, HOST, PASSWORD
 import telebot
 from telegramcalendar import create_calendar
 
@@ -147,6 +147,7 @@ def expenseDetailsRecorderDate(message):
 
 #expense data insert function into mysql database
 def expenseDetailsRecorder(message, date):
+    bot.delete_message(chat_id=message.chat.id, message_id=message.id)
     chat_id = message.chat.id
     dateOfExpense = date
     expense = expense_dict[chat_id]
@@ -175,11 +176,6 @@ def trackExpense(message):
         if result == chat_id:
             count = count + 1
             customerExpenses(message, customerid)
-    if count == 0:
-        bot.send_chat_action(message.chat.id, action='typing')
-        t.sleep(0.5)
-        bot.send_message(message.chat.id, 'You do not have any expenses recorded. Please start recording an expense first:')
-        cont(message)
 
 #expense id extractor function
 def expenseIdExtractor(message):
@@ -221,15 +217,14 @@ def customerExpenses(message, customerid):
             dateOfExpense = i[3]
             expenseid = i[4]
             bot.send_message(message.chat.id, 'Expense ID: '+ str(expenseid) +'\nExpense description: '+ description +'\nAmount Spent: ₹'+ str(amount) +'\nDate Spent: '+ str(dateOfExpense))
-        
+            bot.send_message(message.chat.id, 'Select an option below to continue: ', reply_markup = markup1)
+            bot.register_next_step_handler(message, check2)
+
     if count == 0:
         bot.send_chat_action(message.chat.id, action='typing')
         t.sleep(0.5)
-        bot.send_message(message.chat.id, 'You do not have any expenses recorded. Please start recording an expense first:')
+        bot.send_message(message.chat.id, 'You do not have any expenses recorded. Please start recording an expense first.')
         cont(message)
-
-    bot.send_message(message.chat.id, 'Select an option below to continue: ', reply_markup = markup1)
-    bot.register_next_step_handler(message, check2)
 
 #check2
 def check2(message):
@@ -254,6 +249,10 @@ def check2(message):
         bot.send_chat_action(message.chat.id, action='typing')
         t.sleep(0.3)
         bot.send_message(message.chat.id, 'Thank you for using the Expense tracker Bot. You can always come back and tap /continue or /start to record or track your expenses. Have a nice day! Good bye')
+    else:
+        bot.send_message(message.chat.id, 'Wrong option selected, please try again')
+        bot.send_message(message.chat.id, 'Select an option below to continue: ', reply_markup = markup1)
+        bot.register_next_step_handler(message, check2)
 
 def datecalendar(message):
     now = datetime.datetime.now()
@@ -264,7 +263,7 @@ def datecalendar(message):
 
     markup = create_calendar(now.year, now.month)
 
-    bot.send_message(message.chat.id, "Please, choose a date", reply_markup=markup)
+    bot.send_message(message.chat.id, "Select the day of expense", reply_markup=markup)
 
 @bot.callback_query_handler(func=lambda call: 'DAY' in call.data[0:13])
 def handle_day_query(call):
