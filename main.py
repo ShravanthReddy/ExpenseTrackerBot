@@ -38,7 +38,7 @@ itembtn6 = types.KeyboardButton(optionF)
 markup.add(itembtn1, itembtn2, itembtn5)
 markup1.add(itembtn3, itembtn6, itembtn4, itembtn5)
 
-mydb = mysql.connector.connect(user='root', password="ilml@$600", host="34.133.159.110", database='sql_expensebot')
+mydb = mysql.connector.connect(user='root', password=PASSWORD, host=HOST, database='sql_expensebot')
 mycursor = mydb.cursor()
 
 #start command handler
@@ -217,10 +217,12 @@ def customerExpenses(message, customerid):
             dateOfExpense = i[3]
             expenseid = i[4]
             bot.send_message(message.chat.id, 'Expense ID: '+ str(expenseid) +'\nExpense description: '+ description +'\nAmount Spent: ₹'+ str(amount) +'\nDate Spent: '+ str(dateOfExpense))
-            bot.send_message(message.chat.id, 'Select an option below to continue: ', reply_markup = markup1)
-            bot.register_next_step_handler(message, check2)
 
-    if count == 0:
+    if count > 0:
+        bot.send_message(message.chat.id, 'Select an option below to continue: ', reply_markup = markup1)
+        bot.register_next_step_handler(message, check2)
+
+    else:
         bot.send_chat_action(message.chat.id, action='typing')
         t.sleep(0.5)
         bot.send_message(message.chat.id, 'You do not have any expenses recorded. Please start recording an expense first.')
@@ -236,11 +238,15 @@ def check2(message):
             if i[0] == customerid:
                 amount = i[2]
                 sum = sum + amount
-        bot.send_chat_action(message.chat.id, action='typing')
-        t.sleep(0.3)
-        bot.send_message(message.chat.id, 'Sum of your recorded expenses: ₹'+ str(sum))
-        bot.send_message(message.chat.id, 'Select an option below to continue: ', reply_markup = markup1)
-        bot.register_next_step_handler(message, check2)
+        if sum > 0:
+            bot.send_chat_action(message.chat.id, action='typing')
+            t.sleep(0.3)
+            bot.send_message(message.chat.id, 'Sum of your recorded expenses: ₹'+ str(sum))
+            bot.send_message(message.chat.id, 'Select an option below to continue: ', reply_markup = markup1)
+            bot.register_next_step_handler(message, check2)
+        else:
+            bot.send_message(message.chat.id, 'You do not have any expenses recorded. Please start recording an expense first.')
+            cont(message) 
     elif message.text == optionD:
         cont(message)
     elif message.text == optionF:
