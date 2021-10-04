@@ -219,6 +219,9 @@ while True:
                     query = "delete from expense_details where expense_id = {}".format(expenseid)
                     mycursor.execute(query)
                     mydb.commit()
+                    bot.send_message(message.chat.id, 'Deleting..')
+                    bot.send_chat_action(message.chat.id, action='typing')
+                    t.sleep(0.2)
                     bot.send_message(message.chat.id, "Expense has been deleted.")
                     bot.send_message(message.chat.id, 'Select an option below to continue: ', reply_markup = markup1)
                     bot.register_next_step_handler(message, check2)
@@ -268,7 +271,8 @@ while True:
                     bot.send_chat_action(message.chat.id, action='typing')
                     t.sleep(0.2)
                     bot.send_message(message.chat.id, 'Your expense date has been updated.')
-                    cont(message)
+                    bot.send_message(message.chat.id, 'Select an option below to continue', reply_markup = markup1)
+                    bot.register_next_step_handler(message, check2)
 
             if count == 0:
                 bot.send_message(message.chat.id, 'Oops! Wrong serial number entered. Please try again', reply_markup = markup1)
@@ -407,7 +411,9 @@ while True:
                     bot.send_chat_action(message.chat.id, action='typing')
                     t.sleep(0.2)
                     bot.send_message(message.chat.id, 'Your expense description has been updated.')
-                    cont(message)
+                    bot.send_message(message.chat.id, 'Select an option below to continue', reply_markup = markup1)
+                    bot.register_next_step_handler(message, check2)
+                    
             if count == 0:
                 bot.send_message(message.chat.id, 'Oops! Wrong Expense ID entered. Please try again', reply_markup = markup1)
                 bot.register_next_step_handler(message, check2)
@@ -445,7 +451,8 @@ while True:
                     bot.send_chat_action(message.chat.id, action='typing')
                     t.sleep(0.2)
                     bot.send_message(message.chat.id, 'Your expense amount has been updated.')
-                    cont(message)
+                    bot.send_message(message.chat.id, 'Select an option below to continue', reply_markup = markup1)
+                    bot.register_next_step_handler(message, check2)
 
             if count == 0:
                 bot.send_message(message.chat.id, 'Oops! Wrong Expense ID entered. Please try again', reply_markup = markup1)
