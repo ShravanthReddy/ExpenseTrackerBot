@@ -76,7 +76,7 @@ while True:
     #other commands handler
     @bot.message_handler(func=lambda message: True)
     def all(message):
-      bot.send_message(message.chat.id, 'Wrong input, please try again. \ntap /continue or /start to record or track your expenses.')
+        bot.send_message(message.chat.id, 'Wrong input, please try again. \ntap /continue or /start to record or track your expenses.')
 
     #check1
     def check(message):
@@ -100,6 +100,7 @@ while True:
         initiation(customerid, chat_id)
         expenseDetailsRecorderDescription(message)
 
+    #function to initialize class expense
     def initiation(mainvar, chat_id):
         initvar = expense(mainvar)
         expense_dict[chat_id] = initvar
@@ -199,39 +200,33 @@ while True:
 
     #expense id recorder function
     def expenseIdExtractor(message):
-        bot.send_message(message.chat.id, "Enter the Expense ID to continue:\n(Please note: This action is not reversible)")
+        bot.send_message(message.chat.id, "Enter the serial number of the expense record to continue:\n(Please note: This action is not reversible)")
         bot.register_next_step_handler(message, deleteRecords)
-
-    #expense id checker
-    def expenseIdCheck(message, expenseid):
-        try:
-            count = 0
-            customerid = int(customeridExtraction(message))
-            mycursor.execute("select expense_id, customer_id from expense_details")
-            for i in mycursor.fetchall():
-                if i[0] == int(expenseid) and i[1] == int(customerid):
-                    count = count+1     
-                    return 2
-            if count == 0:
-                return 1
-        except Exception as e:
-            return 0
 
     #delete records function
     def deleteRecords(message):
-        expenseid = message.text
-        result = expenseIdCheck(message, expenseid)
-        if result == 2:   
-            query = "delete from expense_details where expense_id = {}".format(expenseid)
-            mycursor.execute(query)
-            mydb.commit()
-            bot.send_message(message.chat.id, "Expense has been deleted.")
-            bot.send_message(message.chat.id, 'Select an option below to continue: ', reply_markup = markup1)
-            bot.register_next_step_handler(message, check2)
-        if result == 1:
-            bot.send_message(message.chat.id, 'Oops! Wrong Expense ID entered. Please try again', reply_markup = markup1)
-            bot.register_next_step_handler(message, check2)
-        if result == 0:
+        chat_id = message.chat.id
+        identifier(message)
+        expense = expense_dict[chat_id]
+        count = 0
+        try:
+            serialno = int(message.text)
+            for i in range(1, len(expense.serialNumDict)+1):
+                if i == serialno:
+                    expenseid = expense.expenseIdDict[i-1]
+                    query = "delete from expense_details where expense_id = {}".format(expenseid)
+                    mycursor.execute(query)
+                    mydb.commit()
+                    bot.send_message(message.chat.id, "Expense has been deleted.")
+                    bot.send_message(message.chat.id, 'Select an option below to continue: ', reply_markup = markup1)
+                    bot.register_next_step_handler(message, check2)
+                    count = count+1
+
+            if count == 0:
+                bot.send_message(message.chat.id, 'Oops! Wrong Expense ID entered. Please try again', reply_markup = markup1)
+                bot.register_next_step_handler(message, check2)
+
+        except Exception as e:
             bot.send_message(message.chat.id, 'Oops! Wrong Expense ID entered. Please try again and enter only numbers', reply_markup = markup1)
             bot.register_next_step_handler(message, check2)
 
@@ -240,20 +235,63 @@ while True:
         bot.send_message(message.chat.id, "Please choose what you want to edit:)")
         bot.register_next_step_handler(message, check3)
 
+    #date recorder function from calendar
+    def editDateRecorder(message):
+        chat_id = message.chat.id
+        expenseid = message.text
+        initiation(expenseid, chat_id)
+        expense = expense_dict[chat_id]
+        expense.dateId = 1
+        datecalendar(message)
+
+    #date edit in mysql database function
+    def editDate(message, date):
+        chat_id = message.chat.id
+        expense = expense_dict[chat_id]
+        try:
+            serialno = int(expense.customerid)
+            identifier(message)
+            expense = expense_dict[chat_id]
+            expense.dateOfExpense = date 
+            count = 0
+            for i in range(1, len(expense.serialNumDict)+1):
+                if i == serialno:
+                    expenseid = expense.expenseIdDict[i-1]
+                    sqlform = "update expense_details SET date_of_expense = %s WHERE expense_id = %s"
+                    form = (expense.dateOfExpense, int(expenseid))
+                    mycursor.execute(sqlform, form)
+                    mydb.commit()
+                    count = count + 1
+                    bot.send_message(message.chat.id, 'Updating..')
+                    bot.send_chat_action(message.chat.id, action='typing')
+                    t.sleep(0.2)
+                    bot.send_message(message.chat.id, 'Your expense date has been updated.')
+                    cont(message)
+
+            if count == 0:
+                bot.send_message(message.chat.id, 'Oops! Wrong serial number entered. Please try again', reply_markup = markup1)
+                bot.register_next_step_handler(message, check2)
+
+        except Exception as e:
+            bot.send_message(message.chat.id, 'Oops! Wrong serial number entered. Please try again and enter only numbers', reply_markup = markup1)
+            bot.register_next_step_handler(message, check2)
+            
+
     #Recorded expense display function
     def customerExpenses(message, customerid):
-        count = 0
+        chat_id = message.chat.id
+        count = 1
+        initiation(count, chat_id)
         mycursor.execute("select customer_id, expense_details, expense_amt, date_of_expense, expense_id from expense_details")
         for i in mycursor.fetchall():
             if i[0] == customerid:
-                count = count + 1
                 description = i[1]
                 amount = i[2]
                 dateOfExpense = i[3]
-                expenseid = i[4]
-                bot.send_message(message.chat.id, 'Expense ID: '+ str(expenseid) +'\nExpense description: '+ description +'\nAmount Spent: ₹'+ str(amount) +'\nDate Spent: '+ str(dateOfExpense))
+                bot.send_message(message.chat.id, str(count) + ') Expense description: '+ description +'\nAmount Spent: ₹'+ str(amount) +'\nDate Spent(YY-MM-DD): '+ str(dateOfExpense))
+                count = count + 1
 
-        if count > 0:
+        if count > 1:
             bot.send_message(message.chat.id, 'Select an option below to continue: ', reply_markup = markup1)
             bot.register_next_step_handler(message, check2)
 
@@ -262,6 +300,21 @@ while True:
             t.sleep(0.5)
             bot.send_message(message.chat.id, 'You do not have any expenses recorded. Please start recording an expense first.')
             cont(message)
+
+    #Function to link expense id and serial number
+    def identifier(message): 
+        chat_id = message.chat.id
+        count = 1
+        initiation(count, chat_id)
+        expense = expense_dict[chat_id]
+        customerid = customeridExtraction(message)
+        mycursor.execute("select customer_id, expense_details, expense_amt, date_of_expense, expense_id from expense_details")
+        for i in mycursor.fetchall():
+            if i[0] == customerid:
+                expense.serialNumDict.append(count)
+                expense.expenseIdDict.append(int(i[4]))
+                count = count+1
+        return
 
     #check2
     def check2(message):
@@ -311,7 +364,7 @@ while True:
             bot.send_message(message.chat.id, 'Enter the new amount so that I can update it in the records:')
             bot.register_next_step_handler(message, editAmountRecorder)
         elif message.text == optionJ:
-            bot.send_message(message.chat.id, 'Enter the Expense ID of the record to edit it:')
+            bot.send_message(message.chat.id, 'Enter the serial number of the record to edit it:')
             bot.register_next_step_handler(message, editDateRecorder)
         elif message.text == optionE:
             exitFunc(message)
@@ -322,67 +375,41 @@ while True:
             bot.send_message(message.chat.id, 'Select an option below to continue: ', reply_markup = markup2)
             bot.register_next_step_handler(message, check3)
 
-    #date recorder function from calendar
-    def editDateRecorder(message):
-        chat_id = message.chat.id
-        expenseid = message.text
-        initiation(expenseid, chat_id)
-        expense = expense_dict[chat_id]
-        expense.dateId = 1
-        datecalendar(message)
-
-    #date edit in mysql database function
-    def editDate(message, date):
-        chat_id = message.chat.id
-        expense = expense_dict[chat_id]
-        result = expenseIdCheck(message, expense.customerid)
-        expense.dateOfExpense = date 
-        expenseid = expense.customerid
-        if result == 2:
-            sqlform = "update expense_details SET date_of_expense = %s WHERE expense_id = %s"
-            form = (expense.dateOfExpense, int(expenseid))
-            mycursor.execute(sqlform, form)
-            mydb.commit()
-            bot.send_message(message.chat.id, 'Updating..')
-            bot.send_chat_action(message.chat.id, action='typing')
-            t.sleep(0.2)
-            bot.send_message(message.chat.id, 'Your expense date has been updated.')
-            cont(message)
-        elif result == 1:
-            bot.send_message(message.chat.id, 'Oops! Wrong Expense ID entered. Please try again', reply_markup = markup1)
-            bot.register_next_step_handler(message, check2)
-        elif result == 0:
-            bot.send_message(message.chat.id, 'Oops! Wrong Expense ID entered. Please try again and enter only numbers', reply_markup = markup1)
-            bot.register_next_step_handler(message, check2)
-
     #description recorder from user
     def editDescriptionRecorder(message):
         chat_id = message.chat.id
         description = message.text
         initiation(description, chat_id)
-        bot.send_message(message.chat.id, 'Now, enter the Expense ID of the record to edit it:')
+        bot.send_message(message.chat.id, 'Now, enter the serial number of the record to edit it:')
         bot.register_next_step_handler(message, editDescription)
 
     #description edit in mysql database
     def editDescription(message):
         chat_id = message.chat.id
-        expenseid = message.text
-        result = expenseIdCheck(message, expenseid) 
         expense = expense_dict[chat_id]
-        if result == 2:
-            sqlform = "update expense_details SET expense_details = %s WHERE expense_id = %s"
-            form = (expense.customerid, int(expenseid))
-            mycursor.execute(sqlform, form)
-            mydb.commit()
-            bot.send_message(message.chat.id, 'Updating..')
-            bot.send_chat_action(message.chat.id, action='typing')
-            t.sleep(0.2)
-            bot.send_message(message.chat.id, 'Your expense description has been updated.')
-            cont(message)
-        elif result == 1:
-            bot.send_message(message.chat.id, 'Oops! Wrong Expense ID entered. Please try again', reply_markup = markup1)
-            bot.register_next_step_handler(message, check2)
-        elif result == 0:
+        description = expense.customerid
+        try:
+            serialno = int(message.text)
+            identifier(message)
+            expense = expense_dict[chat_id]
+            count = 0
+            for i in range(1, len(expense.serialNumDict)+1):
+                if i == serialno:
+                    expenseid = expense.expenseIdDict[i-1]
+                    sqlform = "update expense_details SET expense_details = %s WHERE expense_id = %s"
+                    form = (description, int(expenseid))
+                    mycursor.execute(sqlform, form)
+                    mydb.commit()
+                    count = count+1
+                    bot.send_message(message.chat.id, 'Updating..')
+                    bot.send_chat_action(message.chat.id, action='typing')
+                    t.sleep(0.2)
+                    bot.send_message(message.chat.id, 'Your expense description has been updated.')
+                    cont(message)
+            if count == 0:
+                bot.send_message(message.chat.id, 'Oops! Wrong Expense ID entered. Please try again', reply_markup = markup1)
+                bot.register_next_step_handler(message, check2)
+        except Exception as e:
             bot.send_message(message.chat.id, 'Oops! Wrong Expense ID entered. Please try again and enter only numbers', reply_markup = markup1)
             bot.register_next_step_handler(message, check2)
 
@@ -391,29 +418,38 @@ while True:
         chat_id = message.chat.id
         amount = int(message.text)
         initiation(amount, chat_id)
-        bot.send_message(message.chat.id, 'Now, enter the Expense ID of the record to edit it:')
+        bot.send_message(message.chat.id, 'Now, enter the serial number of the record to edit it:')
         bot.register_next_step_handler(message, editAmount)
 
     #amount edit in mysql database
     def editAmount(message):
         chat_id = message.chat.id
-        expenseid = message.text
-        result = expenseIdCheck(message, expenseid) 
         expense = expense_dict[chat_id]
-        if result == 2:
-            sqlform = "update expense_details SET expense_amt = %s WHERE expense_id = %s"
-            form = (expense.customerid, int(expenseid))
-            mycursor.execute(sqlform, form)
-            mydb.commit()
-            bot.send_message(message.chat.id, 'Updating..')
-            bot.send_chat_action(message.chat.id, action='typing')
-            t.sleep(0.2)
-            bot.send_message(message.chat.id, 'Your expense amount has been updated.')
-            cont(message)
-        elif result == 1:
-            bot.send_message(message.chat.id, 'Oops! Wrong Expense ID entered. Please try again', reply_markup = markup1)
-            bot.register_next_step_handler(message, check2)
-        elif result == 0:
+        try:
+            amount = expense.customerid
+            serialno = int(message.text)
+            identifier(message)
+            expense = expense_dict[chat_id]
+            count = 0
+            for i in range(1, len(expense.serialNumDict)+1):
+                if i == serialno:
+                    expenseid = expense.expenseIdDict[i-1]
+                    sqlform = "update expense_details SET expense_amt = %s WHERE expense_id = %s"
+                    form = (amount, int(expenseid))
+                    mycursor.execute(sqlform, form)
+                    mydb.commit()
+                    count = count + 1
+                    bot.send_message(message.chat.id, 'Updating..')
+                    bot.send_chat_action(message.chat.id, action='typing')
+                    t.sleep(0.2)
+                    bot.send_message(message.chat.id, 'Your expense amount has been updated.')
+                    cont(message)
+
+            if count == 0:
+                bot.send_message(message.chat.id, 'Oops! Wrong Expense ID entered. Please try again', reply_markup = markup1)
+                bot.register_next_step_handler(message, check2)
+
+        except Exception as e:
             bot.send_message(message.chat.id, 'Oops! Wrong Expense ID entered. Please try again and enter only numbers', reply_markup = markup1)
             bot.register_next_step_handler(message, check2)
 
@@ -471,13 +507,8 @@ while True:
         current_shown_dates[chat_id] = date
         markup = create_calendar(year, month)
         bot.edit_message_text("Please, choose a date", call.from_user.id, call.message.message_id, reply_markup=markup)
-
-
-    @bot.callback_query_handler(func=lambda call: "IGNORE" in call.data)
-    def ignore(call):
-        bot.answer_callback_query(call.id, text="OOPS... something went wrong")
     
     try:
         bot.polling()
     except Exception as e:
-        t.sleep(5)
+        t.sleep(1)
