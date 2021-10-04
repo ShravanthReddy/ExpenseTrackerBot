@@ -63,7 +63,7 @@ while True:
         bot.send_chat_action(message.chat.id, action='typing')
         bot.send_message(message.chat.id, "I am here to help you. You will be able to track and record your expenses as you wish. It's just like texting a friend. Trust me it's that easy.")
         bot.send_chat_action(message.chat.id, action='typing')
-        t.sleep(0.5)
+        t.sleep(0.2)
         reply = bot.send_message(message.chat.id, "So let's begin. Choose an option to continue: ", reply_markup=markup)
         bot.register_next_step_handler(reply, check)
 
