@@ -21,6 +21,8 @@ while True:
             self.description = None
             self.amount = None
             self.dateOfExpense = None
+            self.expenseIdDict = list()
+            self.serialNumDict = list()
 
     optionA = 'Record Expense'
     optionB = 'Track Expenses'
