@@ -523,4 +523,4 @@ while True:
     try:
         bot.polling()
     except Exception as e:
-        t.sleep(1)
+        t.sleep(5)
