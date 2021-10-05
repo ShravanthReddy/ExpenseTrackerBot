@@ -192,6 +192,7 @@ while True:
                 cont(message)
         else:
             bot.send_message(message.chat.id, 'Oops! you have entered a date in the future, please try again')
+            t.sleep(0.2)
             expense = expense_dict[message.chat.id]
             expense.dateId = 0
             datecalendar(message)
@@ -250,50 +251,49 @@ while True:
     #date recorder function from calendar
     def editDateRecorder(message):
         chat_id = message.chat.id
-        expenseid = message.text
-        initiation(expenseid, chat_id)
-        expense = expense_dict[chat_id]
-        expense.dateId = 1
-        datecalendar(message)
-
+        try:
+            expenseid = int(message.text)
+            initiation(expenseid, chat_id)
+            expense = expense_dict[chat_id]
+            expense.dateId = 1
+            datecalendar(message)
+        except Exception as e:
+            bot.send_message(message.chat.id, 'Oops! Wrong serial number entered. Please try again and enter only numbers:')
+            bot.register_next_step_handler(message, editDateRecorder)
+            
     #date edit in mysql database function
     def editDate(message, date):
         chat_id = message.chat.id
         expense = expense_dict[chat_id]
-        try:
-            serialno = int(expense.customerid)
-            count = 0
-            if date <= datetime.date.today():
-                identifier(message)
-                expense = expense_dict[chat_id]
-                expense.dateOfExpense = date 
-                for i in range(1, len(expense.serialNumDict)+1):
-                    if i == serialno:
-                        expenseid = expense.expenseIdDict[i-1]
-                        sqlform = "update expense_details SET date_of_expense = %s WHERE expense_id = %s order by date_of_expense"
-                        form = (expense.dateOfExpense, int(expenseid))
-                        mycursor.execute(sqlform, form)
-                        mydb.commit()
-                        count = count + 1
-                        bot.send_message(message.chat.id, 'Updating..')
-                        bot.send_chat_action(message.chat.id, action='typing')
-                        t.sleep(0.2)
-                        bot.send_message(message.chat.id, 'Your expense date has been updated.')
-                        cont(message)
-            else:
-                count = count + 1
-                bot.send_message(message.chat.id, 'Oops! you have entered a date in the future, please try again')
-                expense.dateId = 1
-                datecalendar(message)
+        serialno = expense.customerid
+        count = 0
+        if date <= datetime.date.today():
+            identifier(message)
+            expense = expense_dict[chat_id]
+            expense.dateOfExpense = date 
+            for i in range(1, len(expense.serialNumDict)+1):
+                if i == serialno:
+                    expenseid = expense.expenseIdDict[i-1]
+                    sqlform = "update expense_details SET date_of_expense = %s WHERE expense_id = %s order by date_of_expense"
+                    form = (expense.dateOfExpense, int(expenseid))
+                    mycursor.execute(sqlform, form)
+                    mydb.commit()
+                    count = count + 1
+                    bot.send_message(message.chat.id, 'Updating..')
+                    bot.send_chat_action(message.chat.id, action='typing')
+                    t.sleep(0.2)
+                    bot.send_message(message.chat.id, 'Your expense date has been updated.')
+                    cont(message)
+        else:
+            count = count + 1
+            bot.send_message(message.chat.id, 'Oops! you have entered a date in the future, please try again')
+            expense.dateId = 1
+            datecalendar(message)
 
-            if count == 0:
-                bot.send_message(message.chat.id, 'Oops! Wrong serial number entered. Please try again, enter the serial number to continue:')
-                bot.register_next_step_handler(message, editDateRecorder)
-
-        except Exception as e:
-            bot.send_message(message.chat.id, 'Oops! Wrong serial number entered. Please try again and enter only numbers')
-            bot.register_next_step_handler(message, editDateRecorder)       
-
+        if count == 0:
+            bot.send_message(message.chat.id, 'Oops! Wrong serial number entered. Please try again. Enter the correct serial number to continue:')
+            bot.register_next_step_handler(message, editDateRecorder)
+               
     #Recorded expense display function
     def customerExpenses(message, customerid):
         chat_id = message.chat.id
@@ -425,11 +425,11 @@ while True:
                     bot.register_next_step_handler(message, check2)
                     
             if count == 0:
-                bot.send_message(message.chat.id, 'Oops! Wrong Expense ID entered. Please try again.', reply_markup = markup1)
-                bot.register_next_step_handler(message, check2)
+                bot.send_message(message.chat.id, 'Oops! Wrong serial number entered. Please try again.', reply_markup = markup2)
+                bot.register_next_step_handler(message, check3)
                 
         except Exception as e:
-            bot.send_message(message.chat.id, 'Oops! Wrong Expense ID entered. Please try again and enter only numbers:')
+            bot.send_message(message.chat.id, 'Oops! Wrong serial number entered. Please try again and enter only numbers\nNow, enter the serial number of the record to edit it:')
             bot.register_next_step_handler(message, editDescription)
 
     #amount recorder from user
@@ -441,7 +441,7 @@ while True:
             bot.send_message(message.chat.id, 'Now, enter the serial number of the record to edit it:')
             bot.register_next_step_handler(message, editAmount)
         except Exception as e:
-            bot.send_message(message.chat.id, 'Wrong input, please enter the new amount in numbers so that I can update it in the records:')
+            bot.send_message(message.chat.id, 'Wrong input, please enter the new amount in numbers so that I can update it in the records\nNow, enter the serial number of the record to edit it:')
             bot.register_next_step_handler(message, editAmountRecorder)
 
     #amount edit in mysql database
@@ -470,11 +470,11 @@ while True:
                     bot.register_next_step_handler(message, check2)
 
             if count == 0:
-                bot.send_message(message.chat.id, 'Oops! Wrong serial number entered. Please try again', reply_markup = markup1)
-                bot.register_next_step_handler(message, check2)
+                bot.send_message(message.chat.id, 'Oops! Wrong serial number entered. Please try again', reply_markup=markup2)
+                bot.register_next_step_handler(message, check3)
 
         except Exception as e:
-            bot.send_message(message.chat.id, 'Oops! serial number entered. Please try again and enter only numbers:')
+            bot.send_message(message.chat.id, 'Oops! serial number entered. Please try again and enter only numbers\n Now, enter the serial number of the record to edit it::')
             bot.register_next_step_handler(message, editAmount)
 
     #calendar inline keyboard function
