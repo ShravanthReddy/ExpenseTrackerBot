@@ -216,7 +216,7 @@ while True:
             for i in range(1, len(expense.serialNumDict)+1):
                 if i == serialno:
                     expenseid = expense.expenseIdDict[i-1]
-                    query = "delete from expense_details where expense_id = {}".format(expenseid)
+                    query = "delete from expense_details where expense_id = {} order by date_of_expense".format(expenseid)
                     mycursor.execute(query)
                     mydb.commit()
                     bot.send_message(message.chat.id, 'Deleting..')
@@ -291,7 +291,7 @@ while True:
         chat_id = message.chat.id
         count = 1
         initiation(count, chat_id)
-        mycursor.execute("select customer_id, expense_details, expense_amt, date_of_expense, expense_id from expense_details")
+        mycursor.execute("select customer_id, expense_details, expense_amt, date_of_expense, expense_id from expense_details order by date_of_expense")
         for i in mycursor.fetchall():
             if i[0] == customerid:
                 description = i[1]
