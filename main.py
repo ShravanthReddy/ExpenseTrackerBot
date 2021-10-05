@@ -200,7 +200,7 @@ while True:
                 count = count + 1
                 customerExpenses(message, customerid)
 
-    #expense id recorder function
+    #expense id recorder function for delete operation
     def expenseIdExtractor(message):
         bot.send_message(message.chat.id, "Enter the serial number of the expense record to continue:\n(Please note: This action is not reversible)")
         bot.register_next_step_handler(message, deleteRecords)
@@ -223,8 +223,7 @@ while True:
                     bot.send_chat_action(message.chat.id, action='typing')
                     t.sleep(0.2)
                     bot.send_message(message.chat.id, "Expense has been deleted.")
-                    bot.send_message(message.chat.id, 'Select an option below to continue: ', reply_markup = markup1)
-                    bot.register_next_step_handler(message, check2)
+                    cont(message)
                     count = count+1
 
             if count == 0:
@@ -259,20 +258,24 @@ while True:
             expense = expense_dict[chat_id]
             expense.dateOfExpense = date 
             count = 0
-            for i in range(1, len(expense.serialNumDict)+1):
-                if i == serialno:
-                    expenseid = expense.expenseIdDict[i-1]
-                    sqlform = "update expense_details SET date_of_expense = %s WHERE expense_id = %s"
-                    form = (expense.dateOfExpense, int(expenseid))
-                    mycursor.execute(sqlform, form)
-                    mydb.commit()
-                    count = count + 1
-                    bot.send_message(message.chat.id, 'Updating..')
-                    bot.send_chat_action(message.chat.id, action='typing')
-                    t.sleep(0.2)
-                    bot.send_message(message.chat.id, 'Your expense date has been updated.')
-                    bot.send_message(message.chat.id, 'Select an option below to continue', reply_markup = markup1)
-                    bot.register_next_step_handler(message, check2)
+            if date <= datetime.date.today():
+                for i in range(1, len(expense.serialNumDict)+1):
+                    if i == serialno:
+                        expenseid = expense.expenseIdDict[i-1]
+                        sqlform = "update expense_details SET date_of_expense = %s WHERE expense_id = %s order by date_of_expense"
+                        form = (expense.dateOfExpense, int(expenseid))
+                        mycursor.execute(sqlform, form)
+                        mydb.commit()
+                        count = count + 1
+                        bot.send_message(message.chat.id, 'Updating..')
+                        bot.send_chat_action(message.chat.id, action='typing')
+                        t.sleep(0.2)
+                        bot.send_message(message.chat.id, 'Your expense date has been updated.')
+                        cont(message)
+            else:
+                count = count + 1
+                bot.send_message(message.chat.id, 'Oops! you have entered a date in the future, please try again')
+                cont(message)
 
             if count == 0:
                 bot.send_message(message.chat.id, 'Oops! Wrong serial number entered. Please try again', reply_markup = markup1)
@@ -296,11 +299,9 @@ while True:
                 dateOfExpense = i[3]
                 bot.send_message(message.chat.id, str(count) + ') Expense description: '+ description +'\nAmount Spent: ₹'+ str(amount) +'\nDate Spent(YY-MM-DD): '+ str(dateOfExpense))
                 count = count + 1
-
         if count > 1:
             bot.send_message(message.chat.id, 'Select an option below to continue: ', reply_markup = markup1)
             bot.register_next_step_handler(message, check2)
-
         else:
             bot.send_chat_action(message.chat.id, action='typing')
             t.sleep(0.5)
@@ -314,7 +315,7 @@ while True:
         initiation(count, chat_id)
         expense = expense_dict[chat_id]
         customerid = customeridExtraction(message)
-        mycursor.execute("select customer_id, expense_details, expense_amt, date_of_expense, expense_id from expense_details")
+        mycursor.execute("select customer_id, expense_details, expense_amt, date_of_expense, expense_id from expense_details order by date_of_expense")
         for i in mycursor.fetchall():
             if i[0] == customerid:
                 expense.serialNumDict.append(count)
@@ -402,7 +403,7 @@ while True:
             for i in range(1, len(expense.serialNumDict)+1):
                 if i == serialno:
                     expenseid = expense.expenseIdDict[i-1]
-                    sqlform = "update expense_details SET expense_details = %s WHERE expense_id = %s"
+                    sqlform = "update expense_details SET expense_details = %s WHERE expense_id = %s order by date_of_expense"
                     form = (description, int(expenseid))
                     mycursor.execute(sqlform, form)
                     mydb.commit()
@@ -442,7 +443,7 @@ while True:
             for i in range(1, len(expense.serialNumDict)+1):
                 if i == serialno:
                     expenseid = expense.expenseIdDict[i-1]
-                    sqlform = "update expense_details SET expense_amt = %s WHERE expense_id = %s"
+                    sqlform = "update expense_details SET expense_amt = %s WHERE expense_id = %s order by date_of_expense"
                     form = (amount, int(expenseid))
                     mycursor.execute(sqlform, form)
                     mydb.commit()
