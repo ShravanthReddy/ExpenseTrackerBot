@@ -34,6 +34,7 @@ while True:
     optionH = 'Edit Description'
     optionI = 'Edit Amount'
     optionJ = 'Edit Date'
+    optionK = 'Go Back'
 
     markup = types.ReplyKeyboardMarkup(row_width=1, one_time_keyboard=True)
     markup1 = types.ReplyKeyboardMarkup(row_width=2, one_time_keyboard=True)
@@ -48,9 +49,10 @@ while True:
     itembtn8 = types.KeyboardButton(optionH)
     itembtn9 = types.KeyboardButton(optionI)
     itembtn10 = types.KeyboardButton(optionJ)
+    itembtn11 = types.KeyboardButton(optionK)
     markup.add(itembtn1, itembtn2, itembtn5)
     markup1.add(itembtn3, itembtn6, itembtn7, itembtn4, itembtn5)
-    markup2.add(itembtn8, itembtn9, itembtn10, itembtn4, itembtn5)
+    markup2.add(itembtn8, itembtn9, itembtn10, itembtn11, itembtn5)
 
     mydb = mysql.connector.connect(user='root', password=PASSWORD, host=HOST, database='sql_expensebot')
     mycursor = mydb.cursor()
@@ -274,17 +276,16 @@ while True:
                         cont(message)
             else:
                 count = count + 1
-                bot.send_message(message.chat.id, 'Oops! you have entered a date in the future, please try again')
-                cont(message)
+                bot.send_message(message.chat.id, 'Oops! you have entered a date in the future, please try again', reply_markup = markup2)
+                bot.register_next_step_handler(message, check3)
 
             if count == 0:
-                bot.send_message(message.chat.id, 'Oops! Wrong serial number entered. Please try again', reply_markup = markup1)
-                bot.register_next_step_handler(message, check2)
+                bot.send_message(message.chat.id, 'Oops! Wrong serial number entered. Please try again', reply_markup = markup2)
+                bot.register_next_step_handler(message, check3)
 
         except Exception as e:
-            bot.send_message(message.chat.id, 'Oops! Wrong serial number entered. Please try again and enter only numbers', reply_markup = markup1)
-            bot.register_next_step_handler(message, check2)
-            
+            bot.send_message(message.chat.id, 'Oops! Wrong serial number entered. Please try again and enter only numbers', reply_markup = markup2)
+            bot.register_next_step_handler(message, check3)       
 
     #Recorded expense display function
     def customerExpenses(message, customerid):
@@ -375,8 +376,9 @@ while True:
             bot.register_next_step_handler(message, editDateRecorder)
         elif message.text == optionE:
             exitFunc(message)
-        elif message.text == optionD:
-            cont(message)
+        elif message.text == optionK:
+            bot.send_message(message.chat.id, 'Select an option below to continue: ', reply_markup = markup1)
+            bot.register_next_step_handler(message, check2)
         else:
             bot.send_message(message.chat.id, 'Wrong option selected, please try again')
             bot.send_message(message.chat.id, 'Select an option below to continue: ', reply_markup = markup2)
