@@ -441,7 +441,7 @@ while True:
             bot.send_message(message.chat.id, 'Now, enter the serial number of the record to edit it:')
             bot.register_next_step_handler(message, editAmount)
         except Exception as e:
-            bot.send_message(message.chat.id, 'Wrong input, please enter the new amount in numbers so that I can update it in the records\nNow, enter the serial number of the record to edit it:')
+            bot.send_message(message.chat.id, 'Wrong input, please enter the new amount in numbers so that I can update it in the records:')
             bot.register_next_step_handler(message, editAmountRecorder)
 
     #amount edit in mysql database
@@ -470,11 +470,11 @@ while True:
                     bot.register_next_step_handler(message, check2)
 
             if count == 0:
-                bot.send_message(message.chat.id, 'Oops! Wrong serial number entered. Please try again', reply_markup=markup2)
+                bot.send_message(message.chat.id, 'Oops! wrong serial number entered. Please try again', reply_markup=markup2)
                 bot.register_next_step_handler(message, check3)
 
         except Exception as e:
-            bot.send_message(message.chat.id, 'Oops! serial number entered. Please try again and enter only numbers\n Now, enter the serial number of the record to edit it::')
+            bot.send_message(message.chat.id, 'Oops! wrong serial number entered. Please try again and enter only numbers\n Now, enter the serial number of the record to edit it:')
             bot.register_next_step_handler(message, editAmount)
 
     #calendar inline keyboard function
